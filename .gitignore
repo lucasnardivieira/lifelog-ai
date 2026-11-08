@@ -31,3 +31,6 @@ data/private/
 web/public/data/lifelog.local.json
 !data/synthetic/
 dbt/.user.yml
+
+# raw AI-generated illustrations (optimized copies live in web/public/img)
+images/
