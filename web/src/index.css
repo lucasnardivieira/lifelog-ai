@@ -1,0 +1,184 @@
+@import 'tailwindcss';
+
+/* Tokens from the validated reference palette (dataviz skill, references/palette.md). */
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --surface-2: #f3f2ee;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+  --good-text: #006300;
+
+  /* life areas = categorical slots 1–4, fixed order */
+  --area-body: #2a78d6;
+  --area-mind: #eb6834;
+  --area-growth: #1baf7a;
+  --area-money: #eda100;
+
+  /* circumplex quadrants (always paired with label/position) */
+  --q-yellow: #eda100;
+  --q-red: #e34948;
+  --q-blue: #2a78d6;
+  --q-green: #008300;
+
+  /* status — reserved for meaning, always with icon + label */
+  --good: #0ca30c;
+  --warning: #fab219;
+  --serious: #ec835a;
+  --critical: #d03b3b;
+
+  /* sequential blue + diverging midpoint */
+  --seq-1: #cde2fb;
+  --seq-2: #9ec5f4;
+  --seq-3: #6da7ec;
+  --seq-4: #3987e5;
+  --seq-5: #256abf;
+  --seq-6: #184f95;
+  --seq-7: #0d366b;
+  --div-mid: #f0efec;
+  --div-neg: #e34948;
+  --div-pos: #2a78d6;
+  --cat-1: #2a78d6;
+  --cat-2: #eb6834;
+  --cat-3: #1baf7a;
+  --cat-4: #eda100;
+  --cat-5: #e87ba4;
+  --cat-6: #008300;
+  --cat-7: #6250d6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #232321;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.1);
+    --good-text: #0ca30c;
+    --area-body: #3987e5;
+    --area-mind: #d95926;
+    --area-growth: #199e70;
+    --area-money: #c98500;
+    --q-yellow: #c98500;
+    --q-red: #e34948;
+    --q-blue: #3987e5;
+    --q-green: #008300;
+    --seq-1: #0d366b;
+    --seq-2: #104281;
+    --seq-3: #184f95;
+    --seq-4: #256abf;
+    --seq-5: #3987e5;
+    --seq-6: #6da7ec;
+    --seq-7: #9ec5f4;
+    --div-mid: #383835;
+    --div-neg: #e66767;
+    --div-pos: #3987e5;
+    --cat-1: #3987e5;
+    --cat-2: #d95926;
+    --cat-3: #199e70;
+    --cat-4: #c98500;
+    --cat-5: #d55181;
+    --cat-6: #008300;
+    --cat-7: #9085e9;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --surface-2: #232321;
+  --ink: #f0efec;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255, 255, 255, 0.1);
+  --good-text: #0ca30c;
+  --area-body: #3987e5;
+  --area-mind: #d95926;
+  --area-growth: #199e70;
+  --area-money: #c98500;
+  --q-yellow: #c98500;
+  --q-red: #e34948;
+  --q-blue: #3987e5;
+  --q-green: #008300;
+  --seq-1: #0d366b;
+  --seq-2: #104281;
+  --seq-3: #184f95;
+  --seq-4: #256abf;
+  --seq-5: #3987e5;
+  --seq-6: #6da7ec;
+  --seq-7: #9ec5f4;
+  --div-mid: #383835;
+  --div-neg: #e66767;
+  --div-pos: #3987e5;
+  --cat-1: #3987e5;
+  --cat-2: #d95926;
+  --cat-3: #199e70;
+  --cat-4: #c98500;
+  --cat-5: #d55181;
+  --cat-6: #008300;
+  --cat-7: #9085e9;
+}
+
+@theme inline {
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--border);
+  --color-grid: var(--grid);
+  --color-body: var(--area-body);
+  --color-mind: var(--area-mind);
+  --color-growth: var(--area-growth);
+  --color-money: var(--area-money);
+  --color-good: var(--good);
+  --color-good-text: var(--good-text);
+  --color-warning: var(--warning);
+  --color-serious: var(--serious);
+  --color-critical: var(--critical);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.card {
+  @apply min-w-0 rounded-2xl border border-line bg-surface p-4 sm:p-5;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
