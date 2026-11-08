@@ -30,3 +30,4 @@ data/lifelog.duckdb*
 data/private/
 web/public/data/lifelog.local.json
 !data/synthetic/
+dbt/.user.yml
