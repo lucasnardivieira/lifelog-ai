@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: stg_events
+    description: Typed events with local date and life area.
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: event_date
+        data_tests: [not_null]
+      - name: event_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [sleep, exercise, energy, meal, mood, stress, gratitude, journal,
+                         study, reading, work, expense, income, social]
+      - name: area
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [body, mind, growth, money_social]
+      - name: score
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]

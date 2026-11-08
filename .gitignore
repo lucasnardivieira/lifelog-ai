@@ -10,7 +10,7 @@ dist/
 .env
 *.duckdb
 *.duckdb.wal
-data/
+data/*
 
 # dbt
 dbt/target/
@@ -24,3 +24,9 @@ infra/terraform/.terraform/
 *.tfvars
 !*.tfvars.example
 crash.log
+
+# lifelog data
+data/lifelog.duckdb*
+data/private/
+web/public/data/lifelog.local.json
+!data/synthetic/

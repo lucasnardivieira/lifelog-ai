@@ -1,0 +1,23 @@
+name: lifelog
+version: "1.0.0"
+profile: lifelog
+model-paths: ["models"]
+test-paths: ["tests"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # life-score heuristics (see marts/_marts.yml)
+  sleep_goal_hours: 8
+  study_goal_minutes: 60
+  reading_goal_pages: 20
+  discretionary_budget_brl: 150
+
+models:
+  lifelog:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table

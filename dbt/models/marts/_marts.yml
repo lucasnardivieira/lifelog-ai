@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: fct_daily
+    description: >
+      One row per calendar day (no gaps) with all metrics and four 0–100 life scores.
+      Scores are transparent heuristics (sleep vs goal, quality, energy, exercise; mood, stress,
+      reflection; study and reading vs goals; social time and discretionary spend vs budget),
+      tunable via vars in dbt_project.yml.
+    columns:
+      - name: day
+        data_tests: [unique, not_null]
+      - name: body_score
+        data_tests: [not_null]
+      - name: mind_score
+        data_tests: [not_null]
+      - name: growth_score
+        data_tests: [not_null]
+      - name: money_social_score
+        data_tests: [not_null]
+  - name: fct_weekly
+    columns:
+      - name: week_start
+        data_tests: [unique, not_null]
+  - name: fct_spending
+    description: Spend per day and category.
+  - name: fct_study
+    description: Study minutes per day and topic.
+  - name: fct_events
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]

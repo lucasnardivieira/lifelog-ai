@@ -1,0 +1,8 @@
+lifelog:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      # paths are relative to the repo root (run dbt via `lifelog build` or the Makefile)
+      path: "{{ env_var('LIFELOG_DUCKDB', 'data/lifelog.duckdb') }}"
+      threads: 4
