@@ -154,7 +154,7 @@ export function Wellbeing() {
         <Card
           title="Necessidades psicológicas básicas"
           subtitle="Média diária no período (1–5)"
-          action={<Illustration name="area-mind" alt="" className="h-12 w-12" />}
+          action={<Illustration name="feature-needs" alt="" tile className="h-14 w-14" />}
         >
           <ul className="space-y-3">
             {(

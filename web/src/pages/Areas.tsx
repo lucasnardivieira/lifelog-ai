@@ -221,7 +221,7 @@ function Mind({ days }: { days: Day[] }) {
   const reflections = days.filter((d) => (d.journal_count ?? 0) + (d.gratitude_count ?? 0) > 0).length
   return (
     <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
-      <Card title="Equilíbrio da mente" subtitle="Médias de 1 a 5 · período atual vs anterior">
+      <Card title="Equilíbrio da mente" subtitle="Médias de 1 a 5 · período atual vs anterior" action={<Illustration name="feature-needs" alt="" tile className="h-14 w-14" />}>
         <Chart option={option} height={340} ariaLabel="Radar de autonomia, competência, vínculo, energia e calma" />
       </Card>
       <div className="min-w-0 space-y-4">

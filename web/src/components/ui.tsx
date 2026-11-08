@@ -123,7 +123,7 @@ export function Illustration({ name, alt, className = '', tile = false }: {
       onError={() => setOk(false)}
     />
   )
-  return tile ? <span className={`block overflow-hidden rounded-2xl bg-[#1b1638] p-1.5 ${className}`}>{img}</span> : img
+  return tile ? <span className={`block overflow-hidden rounded-2xl bg-[#1b1638] ${className}`}>{img}</span> : img
 }
 
 export function Legend({ items }: { items: { label: string; color: string; shape?: 'dot' | 'line' }[] }) {
