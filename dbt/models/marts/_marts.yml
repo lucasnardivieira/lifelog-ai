@@ -30,3 +30,25 @@ models:
     columns:
       - name: event_id
         data_tests: [unique, not_null]
+  - name: fct_affect
+    description: Affect check-ins on Russell's circumplex.
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: quadrant
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [yellow, red, blue, green]
+  - name: fct_emotions
+    description: Weekly emotion-word usage (emotional granularity).
+    columns:
+      - name: quadrant
+        data_tests: [not_null]
+  - name: fct_assessments
+    description: WHO-5, PSS-10 and life satisfaction, scored. Flags are not diagnoses.
+    columns:
+      - name: score
+        data_tests: [not_null]
+  - name: fct_habits
+    description: Daily habit check-ins with their if-then plans.

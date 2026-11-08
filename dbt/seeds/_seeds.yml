@@ -1,0 +1,17 @@
+version: 2
+
+seeds:
+  - name: emotion_vocabulary
+    description: >
+      PT-BR emotion words placed on Russell's circumplex. Generated from src/lifelog/emotions.py
+      (a test keeps both in sync).
+    config:
+      column_types: {word: varchar, valence: integer, arousal: integer, quadrant: varchar}
+    columns:
+      - name: word
+        data_tests: [unique, not_null]
+      - name: quadrant
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [yellow, red, blue, green]

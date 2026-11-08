@@ -13,8 +13,8 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: [sleep, exercise, energy, meal, mood, stress, gratitude, journal,
-                         study, reading, work, expense, income, social]
+                values: [sleep, exercise, energy, meal, affect, mood, stress, needs, assessment,
+                         gratitude, journal, study, reading, work, habit, expense, income, social]
       - name: area
         data_tests:
           - not_null
@@ -26,3 +26,13 @@ models:
           - accepted_values:
               arguments:
                 values: [1, 2, 3, 4, 5]
+      - name: valence
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [-2, -1, 0, 1, 2]
+      - name: instrument
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [who5, pss10, life_satisfaction]
