@@ -1,69 +1,108 @@
-# lifelog-ai
+# lifelog-ai · Trilhos
 
-> Text, voice or photo a Telegram bot about your day — Claude turns it into typed events, dbt turns them into insights.
+> See the tracks of your life — sleep, emotions, habits, study, money and relationships — on one timeline,
+> with patterns grounded in psychology research and honest statistics.
 
 [![CI](https://github.com/lucasnardivieira/lifelog-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/lucasnardivieira/lifelog-ai/actions/workflows/ci.yml)
+[![Demo](https://github.com/lucasnardivieira/lifelog-ai/actions/workflows/pages.yml/badge.svg)](https://lucasnardivieira.github.io/lifelog-ai/)
 
-> 🚧 Work in progress — see [Roadmap](#roadmap).
+**Live demo (fictional data, UI in PT-BR):** https://lucasnardivieira.github.io/lifelog-ai/
+
+![The tracks timeline](docs/screenshots/tracks.webp)
+
+| Overview | Emotions (circumplex) | Within-person patterns |
+|---|---|---|
+| ![Overview](docs/screenshots/overview.webp) | ![Emotions](docs/screenshots/emotions.webp) | ![Patterns](docs/screenshots/patterns.webp) |
+| **Well-being (WHO-5, PSS-10)** | **Habits (strength + if-then)** | |
+| ![Well-being](docs/screenshots/wellbeing.webp) | ![Habits](docs/screenshots/habits.webp) | |
 
 ## Problem
-Tracking habits (sleep, spending, study, mood) usually dies because of friction: one app per habit, forms to fill.
-Here, logging is a chat message — `"gastei 42 no almoço"`, `"dormi 6h, acordei cansado"`, `"estudei dbt 1h30"` — and
-the structure is produced by an LLM, validated, and modeled like any other data source.
+Self-tracking apps either track one thing in isolation (a sleep app, a budget app, a mood app) or turn a
+life into gamified streaks. I wanted one place to see how the tracks of my life **interact** — does a
+deadline week wreck my sleep? Do evenings without screens actually help? — measured with **validated
+constructs** and analyzed **within-person**, without pretending correlations are causes.
+
+## What it measures (and why)
+Every identifier comes from the literature — full notes, sources and caveats in
+[docs/research/psychology-foundations.md](docs/research/psychology-foundations.md).
+
+| Construct | Identifier | Cadence |
+|---|---|---|
+| Core affect — Russell's circumplex | valence × arousal (−2…+2), 4 quadrants | check-ins |
+| Emotional granularity — Barrett, Kashdan | PT-BR emotion words (40-word vocabulary) | with each check-in |
+| Sleep — Consensus Sleep Diary | bedtime, sleep-onset latency, awakenings, wake time, quality → efficiency, regularity | mornings |
+| Basic needs — Self-Determination Theory | autonomy, competence, relatedness | evenings |
+| Well-being / stress / life satisfaction | WHO-5, PSS-10 (both validated in BR-PT), 0–10 item | weekly / monthly |
+| Behavioral activation | pleasure & mastery on activities | optional |
+| Habits — Lally; implementation intentions — Gollwitzer | habit strength curve + if-then plan | daily |
+
+**Patterns** compare each day with *your own* trailing 28-day baseline (detrended), include next-day (lag-1)
+effects, require ≥ 10 days per group and a bootstrap 95% CI that excludes zero, and are always labeled
+*association, not cause*. **Safety:** nothing is diagnostic; CVV 188 / SAMU 192 are always one click away and
+highlighted after a low WHO-5.
 
 ## Architecture
 ```mermaid
 flowchart LR
-    TG[Telegram<br/>text · voice · photo] -->|webhook| CR[Cloud Run<br/>bot service]
-    CR -->|voice| STT[Speech-to-Text]
-    CR -->|text / image| CL[Claude<br/>structured outputs]
-    CL -->|typed events| GCS[(GCS raw<br/>JSONL by date)]
-    GCS --> BQ[(BigQuery)]
-    BQ --> DBT[dbt<br/>stg → int → marts]
-    SCH[Cloud Scheduler<br/>Sun 20:00] --> JOB[Cloud Run job<br/>dbt build + insights]
-    DBT --> JOB
-    JOB -->|weekly report| TG
-    DBT --> LS[Looker Studio]
+    subgraph capture["Capture"]
+        S["lifelog synth<br/>(6 months, fictional,<br/>causal structure)"]
+        B["Telegram bot + Claude<br/>(M6, same contract)"]
+    end
+    S --> E[/"events.jsonl<br/>Pydantic event contract"/]
+    B -.-> E
+    E --> STG["dbt · DuckDB<br/>stg_events"]
+    SEED[("seed:<br/>emotion_vocabulary")] --> INT
+    STG --> INT["int_daily_metrics<br/>int_emotion_mentions"]
+    INT --> M["marts: fct_daily · fct_weekly · fct_affect<br/>fct_emotions · fct_assessments · fct_habits<br/>fct_spending · fct_study · fct_events"]
+    M --> X["lifelog build<br/>export + within-person insights"]
+    X --> J[/"lifelog.json (public demo)<br/>lifelog.local.json (private, gitignored)"/]
+    J --> W["React + ECharts dashboard<br/>(static, GitHub Pages)"]
 ```
 
-Event types (v1): `expense`, `sleep`, `mood`, `study`, `exercise`, `meal`, `note`. One message may yield several events.
+- **One event contract** (`src/lifelog/events.py`) for every source — the dashboard doesn't care whether data is synthetic or real.
+- **dbt** does the modeling: sleep efficiency & midpoint regularity, questionnaire scoring (PSS-10 reverse items in SQL), weekly granularity, 0–100 area scores; 40+ data tests.
+- **Insights** (`src/lifelog/insights.py`): detrended group comparisons (Cohen's d + bootstrap CI) and correlations, phrased in PT-BR.
+- **Dashboard** (`web/`): 10 views — overview, tracks timeline, calendar heatmap, emotions, well-being, habits, areas, patterns, diary, weekly report. Light/dark themes; colors from a CVD-validated palette, never color-alone.
 
 ## Tech stack
-Python 3.12 · uv · ruff · pytest · python-telegram-bot · Anthropic Claude API (Haiku for extraction, Sonnet for insights) ·
-Pydantic · DuckDB (local) · GCS · BigQuery · dbt · Terraform · Cloud Run · Cloud Scheduler · Secret Manager · GitHub Actions
-
-## Data sources
-Personal messages sent to a private bot. **This repo only ever contains synthetic data**
-(`scripts/generate_synthetic.py`); real data lives in GCP, and the bot ignores any chat id other than the owner's.
+Python 3.12 · uv · Pydantic · dbt-core + dbt-duckdb · DuckDB · pytest · ruff · React 19 · TypeScript · Vite · Tailwind CSS v4 · Apache ECharts · Vitest · GitHub Actions · GitHub Pages
+(Planned: python-telegram-bot + Claude structured outputs for capture; optional GCP via Terraform.)
 
 ## How to run
-### Local
+Requires [uv](https://docs.astral.sh/uv/) and Node 24.
 ```bash
-cp .env.example .env   # fill in the values
 make setup
-make test
-make run               # polling mode, local DuckDB (M1)
-```
-### Cloud
-```bash
-make deploy    # terraform apply — creates billable resources
-make destroy   # tear everything down
+make test        # pytest + vitest
+make synth       # 6 months of fictional events
+make build       # dbt build + export the dashboard JSON
+make dev         # http://localhost:5173
 ```
 
-## Results / screenshots
-_Coming with M4 (dashboard on synthetic data)._
+### With your own data (stays on your machine)
+Put events in `data/private/events.jsonl` (same contract), then:
+```bash
+make private     # → web/public/data/lifelog.local.json (gitignored); the app prefers it over the demo
+make dev
+```
 
 ## Cost & teardown
-Expected **~US$0–3/month**: Cloud Run, Cloud Scheduler, BigQuery and Speech-to-Text stay within free tiers at personal volume;
-Claude tokens cost cents. A GCP budget alert is recommended. Teardown: `make destroy` (see [infra/terraform/README.md](infra/terraform/README.md)).
+**US$0** — DuckDB runs locally and the demo is a static GitHub Pages site rebuilt weekly by Actions.
+Teardown: disable Pages (Settings → Pages). The Terraform in `infra/` is only for the optional private
+online view (M7) and contains no resources yet; `make destroy` removes anything it creates.
 
 ## What I learned
-_To be filled in as milestones ship._
+- Psychology research translates surprisingly well into data contracts: each construct became typed fields, a dbt model and a test.
+- Within-person analysis changes the story: same-day correlations are easy; detrended, lag-aware comparisons with CIs are what survive.
+- Synthetic data with *causal structure* is the best fixture — it exercises every chart and lets tests assert that the analysis recovers known effects.
+- A CVD-validated palette and "never color-alone" constraints make dashboards calmer, not just more accessible.
 
 ## Roadmap
-- [ ] **M1 Local MVP** — polling bot, Claude text extraction, local DuckDB, tests with recorded responses
-- [ ] **M2 Evals** — golden set (~50 labeled messages), extraction accuracy in CI
-- [ ] **M3 Deploy** — Terraform: Cloud Run webhook, GCS raw, Secret Manager
-- [ ] **M4 Warehouse** — BigQuery + dbt marts + Looker Studio
-- [ ] **M5 Weekly report** — Scheduler + Cloud Run job + Claude insights to Telegram
-- [ ] **M6 Voice & photos** — Speech-to-Text, receipt photos via Claude vision, demo GIF
+- [x] **M1** Event contract, synthetic data, dbt marts, within-person insights
+- [x] **M2–M4** Dashboard: overview, tracks, calendar, emotions, well-being, habits, areas, patterns, diary, weekly report
+- [x] **M5** Public demo on GitHub Pages, README, screenshots
+- [ ] **M6** Telegram bot: Claude turns free text/voice into events (affect grid, emotion words, sleep diary)
+- [ ] **M7** Optional private online view (Cloud Run + Google login) via Terraform
+
+---
+Illustrations generated with ChatGPT for this project. Not a medical device and not a diagnostic tool.
+If you're going through a hard time in Brazil, call **CVV 188** (free, 24h).
