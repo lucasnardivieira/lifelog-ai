@@ -6,14 +6,21 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 dependencies = [
+    "anthropic>=2.6",
     "dbt-core>=1.9",
     "dbt-duckdb>=1.9",
     "pydantic>=2.14.3",
+    "python-telegram-bot[job-queue]>=21.6",
     "pyyaml>=6.0.3",
 ]
 
 [project.scripts]
 lifelog = "lifelog.cli:main"
+
+[project.optional-dependencies]
+voice = [
+    "faster-whisper>=1.0",
+]
 
 [dependency-groups]
 dev = [
@@ -35,6 +42,13 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# prompts read better unwrapped
+"src/lifelog/extract/claude.py" = ["E501"]
+"src/lifelog/bot/flows.py" = ["E501"]
+"src/lifelog/bot/app.py" = ["E501"]
+"src/lifelog/evals.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

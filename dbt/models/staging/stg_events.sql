@@ -19,9 +19,21 @@ with source as (
             'autonomy': 'INTEGER', 'competence': 'INTEGER', 'relatedness': 'INTEGER',
             'pleasure': 'INTEGER', 'mastery': 'INTEGER',
             'instrument': 'VARCHAR', 'responses': 'INTEGER[]',
-            'habit': 'VARCHAR', 'done': 'BOOLEAN', 'if_then': 'VARCHAR'
+            'habit': 'VARCHAR', 'done': 'BOOLEAN', 'if_then': 'VARCHAR',
+            'logged_at': 'VARCHAR'
         }
     )
+),
+
+-- corrections are new events (append-only): drop retracted events and the retractions
+retracted as (
+    select label as event_id from source where type = 'retraction'
+),
+
+events as (
+    select * from source
+    where type <> 'retraction'
+      and event_id not in (select event_id from retracted)
 )
 
 select
@@ -72,4 +84,4 @@ select
     habit,
     done,
     if_then
-from source
+from events

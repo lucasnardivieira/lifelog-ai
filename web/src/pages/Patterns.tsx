@@ -82,6 +82,19 @@ export function Patterns() {
         <span className="ml-auto text-xs text-muted">{shown.length} padrões · calculados com todo o histórico</span>
       </div>
 
+      {payload.insights.length === 0 && (
+        <Card>
+          <div className="flex flex-col items-center gap-3 py-8 text-center">
+            <Illustration name="empty-state" alt="" tile className="h-24 w-24" />
+            <p className="max-w-md text-sm text-ink-2">
+              Ainda não há padrões. Para comparar você com você mesmo, são precisos alguns dias de referência (28) e pelo
+              menos 10 dias de cada lado de uma comparação. Continue registrando: os primeiros padrões costumam aparecer em
+              4 a 6 semanas.
+            </p>
+          </div>
+        </Card>
+      )}
+
       <div className="grid gap-3 xl:grid-cols-2">
         {(showAll ? shown : shown.slice(0, 12)).map((i) => (
           <InsightCard key={i.id} insight={i} />

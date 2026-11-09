@@ -45,6 +45,8 @@ class EventType(StrEnum):
     EXPENSE = "expense"
     INCOME = "income"
     SOCIAL = "social"
+    # bookkeeping: append-only correction — `label` holds the retracted event_id
+    RETRACTION = "retraction"
 
 
 AREA_OF: dict[EventType, Area] = {
@@ -70,7 +72,7 @@ AREA_OF: dict[EventType, Area] = {
 
 # fields each type must carry
 REQUIRED: dict[EventType, tuple[str, ...]] = {
-    EventType.SLEEP: ("hours", "bedtime", "wake_time", "score"),
+    EventType.SLEEP: ("hours",),
     EventType.EXERCISE: ("minutes",),
     EventType.ENERGY: ("score",),
     EventType.MEAL: ("category",),
@@ -88,6 +90,7 @@ REQUIRED: dict[EventType, tuple[str, ...]] = {
     EventType.EXPENSE: ("amount",),
     EventType.INCOME: ("amount",),
     EventType.SOCIAL: ("category",),
+    EventType.RETRACTION: ("label",),
 }
 
 # validated instruments: number of items and allowed response range
@@ -108,6 +111,7 @@ class Event(BaseModel):
     occurred_at: datetime = Field(description="timezone-aware local time")
     type: EventType
     source: Literal["synthetic", "telegram", "manual"]
+    logged_at: datetime | None = Field(default=None, description="when it was recorded, if later")
 
     # generic measures
     score: Likert5 | None = Field(default=None, ge=1, le=5)
@@ -185,5 +189,5 @@ class Event(BaseModel):
         return self
 
     @property
-    def area(self) -> Area:
-        return AREA_OF[self.type]
+    def area(self) -> Area | None:
+        return AREA_OF.get(self.type)

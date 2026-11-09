@@ -46,10 +46,10 @@ highlighted after a low WHO-5.
 flowchart LR
     subgraph capture["Capture"]
         S["lifelog synth<br/>(6 months, fictional,<br/>causal structure)"]
-        B["Telegram bot + Claude<br/>(M6, same contract)"]
+        B["Telegram bot on your PC<br/>buttons · text → Claude · 🎤 → Whisper"]
     end
     S --> E[/"events.jsonl<br/>Pydantic event contract"/]
-    B -.-> E
+    B --> E
     E --> STG["dbt · DuckDB<br/>stg_events"]
     SEED[("seed:<br/>emotion_vocabulary")] --> INT
     STG --> INT["int_daily_metrics<br/>int_emotion_mentions"]
@@ -65,8 +65,8 @@ flowchart LR
 - **Dashboard** (`web/`): 10 views — overview, tracks timeline, calendar heatmap, emotions, well-being, habits, areas, patterns, diary, weekly report. Light/dark themes; colors from a CVD-validated palette, never color-alone.
 
 ## Tech stack
-Python 3.12 · uv · Pydantic · dbt-core + dbt-duckdb · DuckDB · pytest · ruff · React 19 · TypeScript · Vite · Tailwind CSS v4 · Apache ECharts · Vitest · GitHub Actions · GitHub Pages
-(Planned: python-telegram-bot + Claude structured outputs for capture; optional GCP via Terraform.)
+Python 3.12 · uv · Pydantic · dbt-core + dbt-duckdb · DuckDB · python-telegram-bot · Claude (Haiku 5.5, structured outputs) · faster-whisper · pytest · ruff · React 19 · TypeScript · Vite · Tailwind CSS v4 · Apache ECharts · Vitest · GitHub Actions · GitHub Pages
+(Planned: optional private cloud via Terraform.)
 
 ## How to run
 Requires [uv](https://docs.astral.sh/uv/) and Node 24.
@@ -77,6 +77,19 @@ make synth       # 6 months of fictional events
 make build       # dbt build + export the dashboard JSON
 make dev         # http://localhost:5173
 ```
+
+### Telegram bot — log your real life (M6, runs on your PC)
+1. In Telegram, talk to **@BotFather** → `/newbot` → copy the token.
+2. `cp .env.example .env` and set `TELEGRAM_BOT_TOKEN` and `ANTHROPIC_API_KEY`.
+3. `make bot`, then send `/start` to your bot. It replies with your chat id. Put it in
+   `TELEGRAM_ALLOWED_CHAT_ID`, restart with `make bot` (or `make bot-voice` for audio messages).
+4. Write freely ("dormi 6h30, acordei cansado", "gastei 42 no almoço"), send 🎤 audio, or use the
+   button check-ins: `/sono`, `/checkin`, `/fechar`, `/who5`, `/pss10`. Every free-text extraction is shown
+   as a preview that you confirm before it's saved. `/desfazer` undoes the last save, and `/painel` rebuilds the dashboard.
+
+Reminders: sleep diary at 08:00, affect check-in at 15:00, WHO-5 on Sundays at 20:00, PSS-10 + life
+satisfaction on the last day of the month. Messages sent while the PC is off are processed when the bot
+starts again. `make eval` scores the Claude extraction on a golden set (a few cents).
 
 ### With your own data (stays on your machine)
 Put events in `data/private/events.jsonl` (same contract), then:
@@ -100,7 +113,7 @@ online view (M7) and contains no resources yet; `make destroy` removes anything 
 - [x] **M1** Event contract, synthetic data, dbt marts, within-person insights
 - [x] **M2–M4** Dashboard: overview, tracks, calendar, emotions, well-being, habits, areas, patterns, diary, weekly report
 - [x] **M5** Public demo on GitHub Pages, README, screenshots
-- [ ] **M6** Telegram bot: Claude turns free text/voice into events (affect grid, emotion words, sleep diary)
+- [x] **M6** Telegram bot on the PC: button check-ins (sleep diary, affect grid + words, needs, WHO-5, PSS-10), free text/voice → Claude → confirmed events, reminders, undo, crisis safety net
 - [ ] **M7** Optional private online view (Cloud Run + Google login) via Terraform
 
 ---

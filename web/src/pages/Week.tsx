@@ -19,9 +19,26 @@ function compare(cur: number | undefined, prev: number | undefined, higherIsBett
 }
 
 export function WeekPage() {
+  const { payload } = useLife()
+  // full weeks only, unless there is none yet (first days of real data)
+  const full = payload.weeks.filter((w) => w.days === 7)
+  const weeks = full.length ? full : payload.weeks
+  const [idx, setIdx] = useState(Math.max(weeks.length - 1, 0))
+  if (!weeks.length) {
+    return (
+      <Card>
+        <div className="flex flex-col items-center gap-3 py-10 text-center">
+          <Illustration name="empty-state" alt="" tile className="h-24 w-24" />
+          <p className="text-sm text-ink-2">O primeiro relatório aparece depois dos primeiros dias de registro.</p>
+        </div>
+      </Card>
+    )
+  }
+  return <WeekReport weeks={weeks} idx={idx} setIdx={setIdx} />
+}
+
+function WeekReport({ weeks, idx, setIdx }: { weeks: Week[]; idx: number; setIdx: (f: (i: number) => number) => void }) {
   const { payload, t, go } = useLife()
-  const weeks = payload.weeks.filter((w) => w.days === 7)
-  const [idx, setIdx] = useState(weeks.length - 1)
   const w: Week = weeks[idx]
   const p: Week | undefined = weeks[idx - 1]
   const end = new Date(`${w.week_start}T12:00:00`)

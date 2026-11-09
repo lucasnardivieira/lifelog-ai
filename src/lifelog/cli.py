@@ -40,6 +40,18 @@ def _build(args: argparse.Namespace) -> None:
     print(f"Wrote dashboard data ({'sample' if sample else 'PRIVATE'}) to {out}")
 
 
+def _bot(_: argparse.Namespace) -> None:
+    from lifelog.bot.app import main as run_bot
+
+    run_bot()
+
+
+def _eval(_: argparse.Namespace) -> None:
+    from lifelog.evals import run
+
+    run()
+
+
 def main(argv: list[str] | None = None) -> None:
     os.chdir(ROOT)
     parser = argparse.ArgumentParser(prog="lifelog")
@@ -56,6 +68,11 @@ def main(argv: list[str] | None = None) -> None:
     build.add_argument("--events", type=Path, default=SYNTHETIC_EVENTS)
     build.add_argument("--out", type=Path, default=None)
     build.set_defaults(func=_build)
+
+    sub.add_parser("bot", help="run the Telegram bot (local polling)").set_defaults(func=_bot)
+    sub.add_parser("eval", help="score Claude extraction on evals/golden.jsonl").set_defaults(
+        func=_eval
+    )
 
     args = parser.parse_args(argv)
     args.func(args)

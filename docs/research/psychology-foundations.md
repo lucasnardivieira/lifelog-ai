@@ -205,7 +205,19 @@ with the source cited in-app.
 - **Privacy.** Mental-health data is sensitive personal data under the LGPD. Real data stays local
   (`data/private/`, gitignored), the public demo is synthetic, and there are no third-party analytics.
 
-## 10. Open questions
+## 10. Implementation notes (Telegram bot, M6)
+
+- **WHO-5** items and the 6-point response scale are taken from the Brazilian Portuguese version
+  ("Nas últimas duas semanas… Todo o tempo … Nunca").
+- **PSS-10** items and the 0–4 scale (nunca, quase nunca, às vezes, pouco frequente, muito frequente)
+  follow the Brazilian adaptation (Luft et al., 2007; Reis et al., 2010). Items 4, 5, 7 and 8 are
+  reverse-scored in dbt.
+- ⚠️ Before relying on the scores, compare the wording in `src/lifelog/bot/flows.py` with the
+  published PDFs. Small wording drifts change validity.
+- The affect check-in is a 4×4 grid **without a neutral point**, following the Mood Meter convention:
+  people pick a side, and emotion words are offered only from the chosen quadrant.
+
+## 11. Open questions
 
 - The best Brazilian WHO-5 cutoff: confirm in the full text of de Souza & Hidalgo (2012).
 - Exact PT-BR item wording for WHO-5 and PSS-10: take it from the validated Brazilian versions.

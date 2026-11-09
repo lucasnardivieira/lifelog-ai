@@ -1,0 +1,24 @@
+{"text": "dormi 6h30, acordei cansado", "expect": [{"type": "sleep", "hours": 6.5}]}
+{"text": "deitei 23h40, acordei 7h10, demorei uns 20 min pra dormir", "expect": [{"type": "sleep", "bedtime": "23:40", "wake_time": "07:10", "sol_minutes": 20}]}
+{"text": "treinei 40 min de corrida hoje cedo", "expect": [{"type": "exercise", "minutes": 40, "category": "corrida"}]}
+{"text": "gastei 42 reais no almoço", "expect": [{"type": "expense", "amount": 42, "category": "alimentação"}]}
+{"text": "uber pra casa 23,50", "expect": [{"type": "expense", "amount": 23.5, "category": "transporte"}]}
+{"text": "estudei dbt 1h30", "expect": [{"type": "study", "minutes": 90, "category": "dbt"}]}
+{"text": "estudei spark meia hora e li 20 páginas do Kimball", "expect": [{"type": "study", "minutes": 30, "category": "spark"}, {"type": "reading", "pages": 20}]}
+{"text": "me sinto ansioso e sobrecarregado com o prazo", "expect": [{"type": "affect", "valence_sign": -1, "arousal_sign": 1, "emotions_any": ["ansioso", "sobrecarregado"]}]}
+{"text": "tô bem tranquilo agora, relaxado depois do banho", "expect": [{"type": "affect", "valence_sign": 1, "arousal_sign": -1, "emotions_any": ["tranquilo", "relaxado"]}]}
+{"text": "muito animado com o projeto novo!", "expect": [{"type": "affect", "valence_sign": 1, "arousal_sign": 1, "emotions_any": ["animado", "empolgado", "motivado"]}]}
+{"text": "dia triste, cansado de tudo", "expect": [{"type": "affect", "valence_sign": -1, "arousal_sign": -1}]}
+{"text": "jantar com meu namorado, foi ótimo", "expect": [{"type": "social", "category": "namorado"}]}
+{"text": "almoço de domingo com a família", "expect": [{"type": "social", "category": "família"}]}
+{"text": "estresse 4 hoje", "expect": [{"type": "stress", "score": 4}]}
+{"text": "energia lá embaixo, uns 2 de 5", "expect": [{"type": "energy", "score": 2}]}
+{"text": "grato pelo café com calma hoje de manhã", "expect": [{"type": "gratitude"}]}
+{"text": "meditei 10 min", "expect_any_type": ["habit", "exercise"]}
+{"text": "caiu o salário, 9800", "expect": [{"type": "income", "amount": 9800}]}
+{"text": "mercado 312,40", "expect": [{"type": "expense", "amount": 312.4, "category": "mercado"}]}
+{"text": "trabalhei 9h hoje, dia de prazo", "expect": [{"type": "work", "minutes": 540, "category": "prazo"}]}
+{"text": "ontem dormi só 5 horas", "expect": [{"type": "sleep", "hours": 5, "day_offset": -1}]}
+{"text": "comi um hambúrguer gigante no jantar kkk", "expect": [{"type": "meal", "category": "besteira"}]}
+{"text": "academia 1h, foi bem puxado mas me senti forte", "expect": [{"type": "exercise", "minutes": 60, "category": "academia"}]}
+{"text": "oi", "expect": []}

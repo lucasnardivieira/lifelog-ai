@@ -212,6 +212,11 @@ export function Overview() {
           }
         >
           <div className="space-y-2">
+            {topInsights.length === 0 && (
+              <p className="text-sm text-ink-2">
+                Os padrões aparecem depois de algumas semanas de registro: cada dia precisa ser comparado com a sua própria média.
+              </p>
+            )}
             {topInsights.map((i) => (
               <InsightCard key={i.id} insight={i} compact />
             ))}

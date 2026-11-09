@@ -1,4 +1,4 @@
-.PHONY: setup lint format test synth build private dev web-build images deploy destroy
+.PHONY: setup lint format test synth build private dev web-build images bot bot-voice eval deploy destroy
 
 setup:  ## install Python + web deps and git hooks
 	uv sync
@@ -26,6 +26,16 @@ build:  ## dbt build (DuckDB) + export web/public/data/lifelog.json
 
 private:  ## build YOUR data (data/private/events.jsonl) → lifelog.local.json, never committed
 	uv run lifelog build --events data/private/events.jsonl
+
+bot:  ## run the Telegram bot on this machine (needs .env)
+	uv run --env-file .env lifelog bot
+
+bot-voice:  ## same, with local Whisper for voice messages
+	uv sync --extra voice
+	uv run --env-file .env lifelog bot
+
+eval:  ## score Claude extraction on evals/golden.jsonl (live API, a few cents)
+	uv run --env-file .env lifelog eval
 
 dev:  ## dashboard with hot reload at http://localhost:5173
 	cd web && npm run dev
