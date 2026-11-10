@@ -31,8 +31,7 @@ bot:  ## run the Telegram bot on this machine (needs .env)
 	uv run --env-file .env lifelog bot
 
 bot-voice:  ## same, with local Whisper for voice messages
-	uv sync --extra voice
-	uv run --env-file .env lifelog bot
+	uv run --extra voice --env-file .env lifelog bot
 
 eval:  ## score Claude extraction on evals/golden.jsonl (live API, a few cents)
 	uv run --env-file .env lifelog eval

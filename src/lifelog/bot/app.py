@@ -369,6 +369,12 @@ class LifelogBot:
             file = await context.bot.get_file(media.file_id)
             await file.download_to_drive(tmp)
             text = await asyncio.to_thread(voice.transcribe, tmp)
+        except Exception:
+            log.exception("voice transcription failed")
+            await update.message.reply_text(
+                "🎤 Não consegui transcrever o áudio (erro no Whisper local, veja o log do bot). Pode mandar por texto?"
+            )
+            return
         finally:
             tmp.unlink(missing_ok=True)  # audio is never kept
         if not text:

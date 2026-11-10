@@ -19,6 +19,7 @@ lifelog = "lifelog.cli:main"
 
 [project.optional-dependencies]
 voice = [
+    "av>=15,<19",
     "faster-whisper>=1.0",
 ]
 
