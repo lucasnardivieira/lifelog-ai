@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 
-from lifelog.bot.app import brl, describe
+from lifelog.bot.app import brl, describe, explain_api_error
 from lifelog.bot.habits import HabitStore, parse_new_habit
 from lifelog.evals import score_case
 from lifelog.events import Event, EventType
@@ -76,3 +76,15 @@ def test_eval_scoring() -> None:
     bad = [ExtractedEvent(type="stress", score=4)]
     assert score_case(case, good) == {"types_ok": True, "fields_ok": 2, "fields_total": 2}
     assert score_case(case, bad)["types_ok"] is False
+
+
+def test_explain_api_error_messages() -> None:
+    import anthropic
+    import httpx
+
+    req = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+    no_credit = anthropic.BadRequestError(
+        "Your credit balance is too low", response=httpx.Response(400, request=req), body=None
+    )
+    assert "sem créditos" in explain_api_error(no_credit)
+    assert "erro na API" in explain_api_error(RuntimeError("boom"))

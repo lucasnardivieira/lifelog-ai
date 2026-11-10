@@ -88,6 +88,22 @@ def _allowed_chat() -> int | None:
     return int(raw) if raw.lstrip("-").isdigit() else None
 
 
+def explain_api_error(exc: Exception) -> str:
+    """Human message for the most common Claude API failures (never echoes secrets)."""
+    import anthropic
+
+    text = str(exc).lower()
+    if isinstance(exc, anthropic.AuthenticationError):
+        return "🔑 A chave da Anthropic é inválida. Confira ANTHROPIC_API_KEY no .env e reinicie o bot."
+    if isinstance(exc, anthropic.BadRequestError) and "credit balance" in text:
+        return "💳 A conta da Anthropic está sem créditos. Adicione em console.anthropic.com → Plans & Billing."
+    if isinstance(exc, anthropic.RateLimitError):
+        return "⏳ Muitas mensagens seguidas. Tente de novo em um minuto."
+    if isinstance(exc, anthropic.APIConnectionError):
+        return "📡 Sem conexão com a API do Claude. Confira a internet do PC."
+    return "😕 Não consegui interpretar agora (erro na API do Claude). Tente de novo daqui a pouco."
+
+
 def brl(amount: float) -> str:
     """R$ 1.234,56"""
     return "R$ " + f"{amount:,.2f}".translate(str.maketrans(",.", ".,"))
