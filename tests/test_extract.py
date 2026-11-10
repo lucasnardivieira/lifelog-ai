@@ -3,16 +3,20 @@ from datetime import datetime
 from types import SimpleNamespace
 
 from lifelog.extract.claude import build_request, extract
-from lifelog.extract.schema import SCHEMA, TZ, Extraction, to_events
+from lifelog.extract.schema import SCHEMA, TZ, parse_extraction, to_events
 
 NOW = datetime(2026, 11, 9, 21, 0, tzinfo=TZ)
 
 
-def _item(**kw):
-    base = {k: None for k in SCHEMA["properties"]["events"]["items"]["properties"]}
-    base.update(day_offset=0, emotions=[])
-    base.update(kw)
-    return base
+def _item(type: str, day_offset: int = 0, time: str = "", emotions=None, **fields):
+    """Wire-format event: typed values travel as {name, value} text pairs."""
+    return {
+        "type": type,
+        "day_offset": day_offset,
+        "time": time,
+        "emotions": emotions or [],
+        "fields": [{"name": k, "value": str(v)} for k, v in fields.items()],
+    }
 
 
 class FakeMessages:
@@ -27,7 +31,18 @@ class FakeMessages:
         )
 
 
-def test_schema_requires_every_field_and_forbids_extras() -> None:
+def _count_unions(node) -> int:
+    if isinstance(node, dict):
+        own = 1 if ("anyOf" in node or isinstance(node.get("type"), list)) else 0
+        return own + sum(_count_unions(v) for v in node.values())
+    if isinstance(node, list):
+        return sum(_count_unions(v) for v in node)
+    return 0
+
+
+def test_schema_has_no_unions_and_forbids_extras() -> None:
+    # structured outputs reject schemas with more than 16 union/nullable parameters
+    assert _count_unions(SCHEMA) == 0
     item = SCHEMA["properties"]["events"]["items"]
     assert set(item["required"]) == set(item["properties"])
     assert item["additionalProperties"] is False
@@ -61,17 +76,40 @@ def test_extract_and_convert_multiple_events() -> None:
 
 
 def test_invalid_values_are_reported_not_saved() -> None:
-    extraction = Extraction(
-        events=[_item(type="affect", valence=5, arousal=1), _item(type="stress", score=3)],
-        risk="none",
-        reply="",
+    extraction = parse_extraction(
+        {
+            "events": [
+                _item("affect", valence=5, arousal=1),
+                _item("stress", score=3),
+                _item("expense", amount="quarenta"),
+            ],
+            "risk": "none",
+            "reply": "",
+        }
     )
     events, problems = to_events(extraction, NOW, "x")
     assert [e.type.value for e in events] == ["stress"]
-    assert problems and problems[0].startswith("affect")
+    assert any(p.startswith("affect") for p in problems)
+    assert any("amount" in p for p in problems)
+
+
+def test_wire_values_are_cast_to_types() -> None:
+    ex = parse_extraction(
+        {"events": [_item("sleep", hours="6,5", done="true")], "risk": "none", "reply": ""}
+    )
+    assert ex.events[0].hours == 6.5 and ex.events[0].done is True
 
 
 def test_refusal_becomes_concern_without_events() -> None:
     client = SimpleNamespace(messages=FakeMessages({}, stop_reason="refusal"))
     extraction = extract("…", NOW, client=client)
     assert extraction.events == [] and extraction.risk == "concern"
+
+
+def test_events_without_their_main_value_are_skipped_silently() -> None:
+    ex = parse_extraction(
+        {"events": [_item("work"), _item("sleep", hours=7)], "risk": "none", "reply": ""}
+    )
+    events, problems = to_events(ex, NOW, "dormi 7h e fui pro trabalho")
+    assert [e.type.value for e in events] == ["sleep"]
+    assert problems == []

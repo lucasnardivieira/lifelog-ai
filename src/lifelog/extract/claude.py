@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Any
 
 from lifelog.emotions import QUADRANTS, words_in
-from lifelog.extract.schema import SCHEMA, Extraction
+from lifelog.extract.schema import SCHEMA, Extraction, parse_extraction
 
 MODEL = os.environ.get("LIFELOG_MODEL", "claude-haiku-5-5")
 EFFORT = os.environ.get("LIFELOG_EFFORT", "low")
@@ -23,7 +23,15 @@ SYSTEM_PROMPT = f"""You turn short personal-diary messages (Brazilian Portuguese
 for a private life-tracking dashboard. Extract only what the person actually said; never invent values.
 One message may contain several events, or none (then return an empty list and a short reply).
 
-Event types and fields (all other fields null):
+Output format: for each event give type, day_offset, time ("" if not stated), emotions ([] unless affect)
+and `fields`: a list of {{name, value}} pairs ONLY for values the person actually gave (value as text,
+e.g. "6.5", "true", "corrida"). Omit everything else.
+
+Only create an event when its main value is known (sleep needs hours; exercise/study/work need
+minutes; reading needs pages; expense/income need amount; energy/stress need score). "Fui pro
+trabalho" without a duration is not a work event.
+
+Event types and their fields:
 - sleep: hours slept (hours); optional bedtime/wake_time "HH:MM", sol_minutes (time to fall asleep),
   awakenings, waso_minutes, score = sleep quality 1–5, rested 1–5. A night is logged on the morning after.
 - exercise: minutes, category = activity in Portuguese (corrida, academia, bike, caminhada, yoga…);
@@ -79,4 +87,4 @@ def extract(text: str, now: datetime, client: Any = None) -> Extraction:
     if response.stop_reason == "refusal":
         return Extraction(events=[], risk="concern", reply="")
     body = next((b.text for b in response.content if b.type == "text"), "")
-    return Extraction.model_validate(json.loads(body))
+    return parse_extraction(json.loads(body))

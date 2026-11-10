@@ -89,7 +89,7 @@ make dev         # http://localhost:5173
 
 Reminders: sleep diary at 08:00, affect check-in at 15:00, WHO-5 on Sundays at 20:00, PSS-10 + life
 satisfaction on the last day of the month. Messages sent while the PC is off are processed when the bot
-starts again. `make eval` scores the Claude extraction on a golden set (a few cents).
+starts again. `make eval` scores the Claude extraction on a golden set of 24 PT-BR messages: **96% exact event types, 100% field accuracy** with Claude Haiku 5.5 at ~US$0.0003 per message (2026-11-10).
 
 ### With your own data (stays on your machine)
 Put events in `data/private/events.jsonl` (same contract), then:

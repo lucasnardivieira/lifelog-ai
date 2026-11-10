@@ -22,40 +22,16 @@ EXTRACTABLE = [
     "study", "reading", "work", "habit", "expense", "income", "social",
 ]  # fmt: skip
 
-_INT = {"anyOf": [{"type": "integer"}, {"type": "null"}]}
-_NUM = {"anyOf": [{"type": "number"}, {"type": "null"}]}
-_STR = {"anyOf": [{"type": "string"}, {"type": "null"}]}
-_BOOL = {"anyOf": [{"type": "boolean"}, {"type": "null"}]}
-
-EVENT_FIELDS: dict[str, Any] = {
-    "type": {"type": "string", "enum": EXTRACTABLE},
-    "day_offset": {"type": "integer", "description": "0 = today, -1 = yesterday"},
-    "time": {**_STR, "description": "HH:MM local time if mentioned"},
-    "score": _INT,
-    "hours": _NUM,
-    "minutes": _INT,
-    "pages": _INT,
-    "amount": _NUM,
-    "category": _STR,
-    "label": _STR,
-    "note": _STR,
-    "valence": _INT,
-    "arousal": _INT,
-    "emotions": {"type": "array", "items": {"type": "string", "enum": list(EMOTIONS)}},
-    "autonomy": _INT,
-    "competence": _INT,
-    "relatedness": _INT,
-    "pleasure": _INT,
-    "mastery": _INT,
-    "bedtime": _STR,
-    "wake_time": _STR,
-    "sol_minutes": _INT,
-    "awakenings": _INT,
-    "waso_minutes": _INT,
-    "rested": _INT,
-    "habit": _STR,
-    "done": _BOOL,
-}
+# Field name → Python type. Values travel as text in {name, value} pairs, so the JSON schema has
+# no nullable/union types at all (structured outputs cap unions at 16) and Claude only emits the
+# fields the person actually mentioned — fewer output tokens, lower cost.
+FIELD_TYPES: dict[str, type] = {
+    "score": int, "hours": float, "minutes": int, "pages": int, "amount": float,
+    "category": str, "label": str, "note": str, "valence": int, "arousal": int,
+    "autonomy": int, "competence": int, "relatedness": int, "pleasure": int, "mastery": int,
+    "bedtime": str, "wake_time": str, "sol_minutes": int, "awakenings": int,
+    "waso_minutes": int, "rested": int, "habit": str, "done": bool,
+}  # fmt: skip
 
 SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -64,8 +40,28 @@ SCHEMA: dict[str, Any] = {
             "type": "array",
             "items": {
                 "type": "object",
-                "properties": EVENT_FIELDS,
-                "required": list(EVENT_FIELDS),
+                "properties": {
+                    "type": {"type": "string", "enum": EXTRACTABLE},
+                    "day_offset": {"type": "integer"},
+                    "time": {"type": "string"},
+                    "emotions": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": list(EMOTIONS)},
+                    },
+                    "fields": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string", "enum": list(FIELD_TYPES)},
+                                "value": {"type": "string"},
+                            },
+                            "required": ["name", "value"],
+                            "additionalProperties": False,
+                        },
+                    },
+                },
+                "required": ["type", "day_offset", "time", "emotions", "fields"],
                 "additionalProperties": False,
             },
         },
@@ -75,6 +71,17 @@ SCHEMA: dict[str, Any] = {
     "required": ["events", "risk", "reply"],
     "additionalProperties": False,
 }
+
+
+def _cast(kind: type, value: str) -> Any:
+    value = value.strip()
+    if kind is bool:
+        return value.lower() in ("true", "sim", "1", "yes")
+    if kind is int:
+        return int(round(float(value.replace(",", "."))))
+    if kind is float:
+        return float(value.replace(",", "."))
+    return value
 
 
 class ExtractedEvent(BaseModel):
@@ -111,6 +118,30 @@ class Extraction(BaseModel):
     events: list[ExtractedEvent]
     risk: Literal["none", "concern", "crisis"] = "none"
     reply: str = ""
+    problems: list[str] = []
+
+
+def parse_extraction(raw: dict[str, Any]) -> Extraction:
+    """Wire format ({name, value} pairs) → typed ExtractedEvents; bad values become problems."""
+    events, problems = [], []
+    for item in raw.get("events", []):
+        kwargs: dict[str, Any] = {
+            "type": item["type"],
+            "day_offset": item.get("day_offset", 0),
+            "time": item.get("time") or None,
+            "emotions": item.get("emotions") or [],
+        }
+        for pair in item.get("fields", []):
+            name, value = pair["name"], pair["value"]
+            if name in FIELD_TYPES and value.strip() and value.strip().lower() != "null":
+                try:
+                    kwargs[name] = _cast(FIELD_TYPES[name], value)
+                except ValueError:
+                    problems.append(f"{item['type']}: {name}={value!r}")
+        events.append(ExtractedEvent(**kwargs))
+    return Extraction(
+        events=events, risk=raw.get("risk", "none"), reply=raw.get("reply", ""), problems=problems
+    )
 
 
 def _when(item: ExtractedEvent, now: datetime) -> datetime:
@@ -131,7 +162,7 @@ def to_events(
 ) -> tuple[list[Event], list[str]]:
     """Validate each extracted item against the contract. Returns (events, problems)."""
     events: list[Event] = []
-    problems: list[str] = []
+    problems: list[str] = list(extraction.problems)
     for item in extraction.events:
         fields = item.model_dump(exclude={"type", "day_offset", "time"}, exclude_none=True)
         if not fields.get("emotions"):
@@ -153,5 +184,7 @@ def to_events(
             )
         except (ValidationError, ValueError) as exc:
             first = exc.errors()[0]["msg"] if isinstance(exc, ValidationError) else str(exc)
+            if "events need" in first:
+                continue  # mentioned without its main value ("fui pro trabalho"): not an error
             problems.append(f"{item.type}: {first}")
     return events, problems
