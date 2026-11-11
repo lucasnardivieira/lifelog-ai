@@ -26,6 +26,13 @@ This creates `lifelog-private` and then stops with "Refusing to upload private d
 nothing is uploaded yet.
 
 ## 3. Protect it with Cloudflare Access
+
+> Tip: the dashboard UI moves around. A reliable alternative is the API: give the token the extra
+> permission **Account · Access: Apps and Policies · Edit**, then create or update a self-hosted Access app
+> with `self_hosted_domains = ["lifelog-private.pages.dev", "*.lifelog-private.pages.dev"]`,
+> `session_duration = "720h"`, and an allow policy for your email. Check with
+> `curl -sI https://lifelog-private.pages.dev`, which must answer 302 to `*.cloudflareaccess.com`.
+
 1. Dashboard → **Zero Trust**. Pick a team name and the **Free** plan (it may ask for a payment
    method even on the free plan).
 2. *Access* → *Applications* → *Add an application* → **Self-hosted**:
