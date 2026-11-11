@@ -174,7 +174,7 @@ export function Overview() {
                 )}
                 {latest.sleep_hours != null && (
                   <span className="rounded-full bg-surface-2 px-3 py-1 text-xs">
-                    😴 {hoursDec(latest.sleep_hours)} · {latest.bedtime}→{latest.wake_time}
+                    😴 {hoursDec(latest.sleep_hours)}{latest.bedtime && latest.wake_time ? ` · ${latest.bedtime}→${latest.wake_time}` : ''}
                   </span>
                 )}
                 {latest.study_minutes ? (

@@ -63,7 +63,7 @@ export function DayDetail({ day, onClose }: { day: string; onClose?: () => void 
           )}
           {row.sleep_hours != null && (
             <span className="rounded-full bg-surface-2 px-3 py-1">
-              😴 {hoursDec(row.sleep_hours)} · eficiência {row.sleep_efficiency}%
+              😴 {hoursDec(row.sleep_hours)}{row.sleep_efficiency != null ? ` · eficiência ${row.sleep_efficiency}%` : ''}
             </span>
           )}
           {row.is_deadline && <span className="rounded-full bg-surface-2 px-3 py-1">⏳ dia de prazo</span>}

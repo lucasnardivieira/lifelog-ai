@@ -172,7 +172,7 @@ export function Tracks() {
         `<div style="display:flex;justify-content:space-between;gap:16px">${color ? dot(color) : ''}<span style="flex:1;color:${t['ink-2']}">${label}</span><b>${value}</b></div>`
       return [
         `<div style="font-weight:600;margin-bottom:4px">${longDate(d.day)}${d.is_deadline ? ' · ⏳ prazo' : ''}</div>`,
-        d.sleep_hours != null ? row('Sono', `${hoursDec(d.sleep_hours)} (${d.bedtime}→${d.wake_time})`, t['area-body']) : '',
+        d.sleep_hours != null ? row('Sono', `${hoursDec(d.sleep_hours)}${d.bedtime && d.wake_time ? ` (${d.bedtime}→${d.wake_time})` : ''}`, t['area-body']) : '',
         d.quadrant ? row('Afeto', `${QUADRANT_SHORT[d.quadrant]} (${fmt1(d.valence)})`, t[QUADRANT_TOKEN[d.quadrant]]) : '',
         d.energy != null ? row('Energia', `${fmt1(d.energy)}/5`, t['area-body']) : '',
         d.stress != null ? row('Estresse', `${fmt1(d.stress)}/5`, t['area-mind']) : '',
