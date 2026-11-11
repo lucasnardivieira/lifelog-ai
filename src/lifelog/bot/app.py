@@ -29,7 +29,7 @@ from telegram.ext import (
     filters,
 )
 
-from lifelog import safety, voice
+from lifelog import publish, safety, voice
 from lifelog.bot.flows import (
     LIFE_SATISFACTION,
     PSS10,
@@ -174,6 +174,15 @@ class LifelogBot:
                     if not self._build_again:
                         break
                 log.info("dashboard refreshed (%s)", "ok" if ok else "failed")
+                if (
+                    ok
+                    and publish.configured()
+                    and os.environ.get("LIFELOG_ACCESS_CONFIRMED") == "1"
+                ):
+                    try:
+                        await asyncio.to_thread(publish.publish)
+                    except publish.PublishError:
+                        log.exception("publishing the private dashboard failed")
             finally:
                 self._building = False
 

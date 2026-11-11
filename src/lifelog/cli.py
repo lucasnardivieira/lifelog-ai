@@ -46,6 +46,17 @@ def _bot(_: argparse.Namespace) -> None:
     run_bot()
 
 
+def _publish(args: argparse.Namespace) -> None:
+    from lifelog.publish import PublishError, create_project, publish
+
+    try:
+        if args.create:
+            print(create_project())
+        print(publish())
+    except PublishError as exc:
+        sys.exit(str(exc))
+
+
 def _eval(_: argparse.Namespace) -> None:
     from lifelog.evals import run
 
@@ -70,6 +81,11 @@ def main(argv: list[str] | None = None) -> None:
     build.set_defaults(func=_build)
 
     sub.add_parser("bot", help="run the Telegram bot (local polling)").set_defaults(func=_bot)
+    pub = sub.add_parser(
+        "publish", help="deploy the PRIVATE dashboard to Cloudflare (Access-protected)"
+    )
+    pub.add_argument("--create", action="store_true", help="create the Pages project first")
+    pub.set_defaults(func=_publish)
     sub.add_parser("eval", help="score Claude extraction on evals/golden.jsonl").set_defaults(
         func=_eval
     )

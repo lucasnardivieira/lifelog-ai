@@ -1,4 +1,4 @@
-.PHONY: setup lint format test synth build private dev web-build images bot bot-voice eval deploy destroy
+.PHONY: setup lint format test synth build private dev web-build images bot bot-voice eval publish deploy destroy
 
 setup:  ## install Python + web deps and git hooks
 	uv sync
@@ -32,6 +32,10 @@ bot:  ## run the Telegram bot on this machine (needs .env)
 
 bot-voice:  ## same, with local Whisper for voice messages
 	uv run --extra voice --env-file .env lifelog bot
+
+publish:  ## build + upload the PRIVATE dashboard to Cloudflare (needs Access set up, see docs/private-dashboard.md)
+	uv run --env-file .env lifelog build --events data/private/events.jsonl
+	uv run --env-file .env lifelog publish
 
 eval:  ## score Claude extraction on evals/golden.jsonl (live API, a few cents)
 	uv run --env-file .env lifelog eval

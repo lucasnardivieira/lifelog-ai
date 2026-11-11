@@ -98,3 +98,13 @@ def test_eval_allows_welcome_extra_events() -> None:
     ]
     assert score_case(case, items)["types_ok"] is True
     assert score_case({"expect": [{"type": "sleep"}]}, items)["types_ok"] is False
+
+
+def test_publish_refuses_without_access_confirmation(monkeypatch) -> None:
+    from lifelog import publish
+
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "x")
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "y")
+    monkeypatch.delenv("LIFELOG_ACCESS_CONFIRMED", raising=False)
+    with pytest.raises(publish.PublishError, match="Refusing"):
+        publish.publish()

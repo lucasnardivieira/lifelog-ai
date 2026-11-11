@@ -91,6 +91,10 @@ Reminders: sleep diary at 08:00, affect check-in at 15:00, WHO-5 on Sundays at 2
 satisfaction on the last day of the month. Messages sent while the PC is off are processed when the bot
 starts again. `make eval` scores the Claude extraction on a golden set of 30 PT-BR messages: **100% event types, 100% field accuracy** with Claude Haiku 5.5 at ~US$0.0003 per message (2026-11-10).
 
+### Private dashboard online (optional)
+See it from your phone behind a login (Cloudflare Pages + Cloudflare Access, free):
+[docs/private-dashboard.md](docs/private-dashboard.md). The bot refuses to upload anything until you confirm Access is protecting the site.
+
 ### With your own data (stays on your machine)
 Put events in `data/private/events.jsonl` (same contract), then:
 ```bash
@@ -114,7 +118,8 @@ online view (M7) and contains no resources yet; `make destroy` removes anything 
 - [x] **M2–M4** Dashboard: overview, tracks, calendar, emotions, well-being, habits, areas, patterns, diary, weekly report
 - [x] **M5** Public demo on GitHub Pages, README, screenshots
 - [x] **M6** Telegram bot on the PC: button check-ins (sleep diary, affect grid + words, needs, WHO-5, PSS-10), free text/voice → Claude → confirmed events, reminders, undo, crisis safety net
-- [ ] **M7** Optional private online view (Cloud Run + Google login) via Terraform
+- [x] **M7a** Private online dashboard: Cloudflare Pages + Access (email/Google login), auto-published by the bot
+- [ ] **M7b** Bot in the cloud (works with the PC off)
 
 ---
 Illustrations generated with ChatGPT for this project. Not a medical device and not a diagnostic tool.
