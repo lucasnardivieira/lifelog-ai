@@ -39,6 +39,7 @@ from lifelog.bot.flows import (
     is_last_day_of_month,
 )
 from lifelog.bot.habits import HabitStore, parse_new_habit
+from lifelog.dedupe import is_duplicate
 from lifelog.events import Event, EventType
 from lifelog.extract.claude import extract
 from lifelog.extract.schema import TZ, to_events
@@ -211,8 +212,8 @@ class LifelogBot:
         kind, token, *rest = query.data.split("|")
         chat_data = context.chat_data
 
-        if kind in ("save", "drop"):
-            await self._resolve_preview(query, chat_data, token, save=kind == "save")
+        if kind in ("save", "new", "drop"):
+            await self._resolve_preview(query, chat_data, token, mode=kind)
             return
 
         current = chat_data.get("flow")
@@ -316,33 +317,60 @@ class LifelogBot:
             return
 
         pid = uuid.uuid4().hex[:8]
-        context.chat_data.setdefault("pending", {})[pid] = events
-        lines = "\n".join(html.escape(describe(e)) for e in events)
+        repeated = [
+            is_duplicate(e, self.store.events_on(e.occurred_at.date().isoformat())) is not None
+            for e in events
+        ]
+        context.chat_data.setdefault("pending", {})[pid] = (events, repeated)
+        lines = "\n".join(
+            f"↺ <s>{html.escape(describe(e))}</s> <i>já registrado</i>"
+            if dup
+            else html.escape(describe(e))
+            for e, dup in zip(events, repeated, strict=True)
+        )
         heard = f"🎤 <i>{html.escape(text)}</i>\n\n" if via_voice else ""
         warn = f"\n\n⚠️ Não entendi: {html.escape('; '.join(problems))}" if problems else ""
+        n_new = repeated.count(False)
+        if not any(repeated):
+            buttons = [("✅ salvar", "save"), ("✖ descartar", "drop")]
+            note = ""
+        elif n_new:
+            buttons = [
+                (f"✅ salvar só os novos ({n_new})", "new"),
+                ("salvar tudo", "save"),
+                ("✖", "drop"),
+            ]
+            note = "\n\n↺ = parece repetir algo que você já registrou hoje."
+        else:
+            buttons = [("salvar mesmo assim", "save"), ("✖ ok, descartar", "drop")]
+            note = "\n\nTudo isso já estava registrado hoje 👍"
         keyboard = InlineKeyboardMarkup(
             [
                 [
-                    InlineKeyboardButton("✅ salvar", callback_data=f"save|{pid}"),
-                    InlineKeyboardButton("✖ descartar", callback_data=f"drop|{pid}"),
+                    InlineKeyboardButton(label, callback_data=f"{kind}|{pid}")
+                    for label, kind in buttons
                 ]
             ]
         )
         await msg.reply_text(
-            f"{heard}{html.escape(extraction.reply)}\n\n{lines}{warn}",
+            f"{heard}{html.escape(extraction.reply)}\n\n{lines}{warn}{note}",
             parse_mode=ParseMode.HTML,
             reply_markup=keyboard,
         )
 
-    async def _resolve_preview(self, query: Any, chat_data: dict, pid: str, save: bool) -> None:
-        events = chat_data.get("pending", {}).pop(pid, None)
-        if events is None:
+    async def _resolve_preview(self, query: Any, chat_data: dict, pid: str, mode: str) -> None:
+        pending = chat_data.get("pending", {}).pop(pid, None)
+        if pending is None:
             await query.edit_message_reply_markup(None)
             return
-        if save:
-            chat_data["last_batch"] = self.store.append(events)
+        events, repeated = pending
+        if mode in ("save", "new"):
+            chosen = [
+                e for e, dup in zip(events, repeated, strict=True) if mode == "save" or not dup
+            ]
+            chat_data["last_batch"] = self.store.append(chosen)
             await query.edit_message_text(
-                query.message.text_html + "\n\n✅ salvo", parse_mode=ParseMode.HTML
+                query.message.text_html + f"\n\n✅ salvo ({len(chosen)})", parse_mode=ParseMode.HTML
             )
         else:
             await query.edit_message_text(

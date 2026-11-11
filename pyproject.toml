@@ -50,6 +50,7 @@ select = ["E", "F", "I", "UP", "B"]
 "src/lifelog/bot/flows.py" = ["E501"]
 "src/lifelog/bot/app.py" = ["E501"]
 "src/lifelog/evals.py" = ["E501"]
+"tests/test_dedupe.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

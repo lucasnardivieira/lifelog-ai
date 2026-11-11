@@ -43,6 +43,22 @@ class EventStore:
             for event_id in event_ids
         )
 
+    def events_on(self, day: str) -> list[dict]:
+        """Non-retracted events whose local date is `day` (YYYY-MM-DD)."""
+        if not self.path.exists():
+            return []
+        rows = [
+            json.loads(line) for line in self.path.read_text(encoding="utf-8").splitlines() if line
+        ]
+        retracted = {r["label"] for r in rows if r["type"] == EventType.RETRACTION}
+        return [
+            r
+            for r in rows
+            if r["type"] != EventType.RETRACTION
+            and r["occurred_at"][:10] == day
+            and r["event_id"] not in retracted
+        ]
+
     def count_today(self, event_type: EventType, today: str) -> int:
         """How many (non-retracted) events of a type were logged for a local date."""
         if not self.path.exists():
