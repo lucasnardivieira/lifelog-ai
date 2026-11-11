@@ -67,3 +67,36 @@ def is_duplicate(new: Event, existing: list[dict[str, Any]]) -> dict[str, Any] |
                 return e
         return None
     return None  # affect check-ins are naturally repeated during the day
+
+
+ENRICHABLE: dict[EventType, tuple[str, ...]] = {
+    EventType.SLEEP: (
+        "bedtime",
+        "wake_time",
+        "sol_minutes",
+        "awakenings",
+        "waso_minutes",
+        "score",
+        "rested",
+    ),  # fmt: skip
+    EventType.EXPENSE: ("category", "label"),
+    EventType.EXERCISE: ("category", "pleasure", "mastery"),
+    EventType.STUDY: ("category", "pleasure", "mastery"),
+}
+
+
+def adds_detail(new: Event, old: dict[str, Any]) -> list[str]:
+    """Fields the new event knows that the stored one doesn't (e.g. bedtime said later by voice)."""
+    return [
+        f
+        for f in ENRICHABLE.get(new.type, ())
+        if getattr(new, f) is not None and old.get(f) is None
+    ]
+
+
+def classify(new: Event, existing: list[dict[str, Any]]) -> tuple[str, dict[str, Any] | None]:
+    """'new' | 'repeat' (already logged) | 'enrich' (repeat that completes the stored event)."""
+    old = is_duplicate(new, existing)
+    if old is None:
+        return "new", None
+    return ("enrich" if adds_detail(new, old) else "repeat"), old

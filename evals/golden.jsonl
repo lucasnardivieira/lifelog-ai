@@ -1,4 +1,4 @@
-{"text": "dormi 6h30, acordei cansado", "expect": [{"type": "sleep", "hours": 6.5}]}
+{"text": "dormi 6h30, acordei cansado", "expect": [{"type": "sleep", "hours": 6.5}], "allow_extra": ["affect"]}
 {"text": "deitei 23h40, acordei 7h10, demorei uns 20 min pra dormir", "expect": [{"type": "sleep", "bedtime": "23:40", "wake_time": "07:10", "sol_minutes": 20}]}
 {"text": "treinei 40 min de corrida hoje cedo", "expect": [{"type": "exercise", "minutes": 40, "category": "corrida"}]}
 {"text": "gastei 42 reais no almoço", "expect": [{"type": "expense", "amount": 42, "category": "alimentação"}]}
@@ -20,5 +20,11 @@
 {"text": "trabalhei 9h hoje, dia de prazo", "expect": [{"type": "work", "minutes": 540, "category": "prazo"}]}
 {"text": "ontem dormi só 5 horas", "expect": [{"type": "sleep", "hours": 5, "day_offset": -1}]}
 {"text": "comi um hambúrguer gigante no jantar kkk", "expect": [{"type": "meal", "category": "besteira"}]}
-{"text": "academia 1h, foi bem puxado mas me senti forte", "expect": [{"type": "exercise", "minutes": 60, "category": "academia"}]}
+{"text": "academia 1h, foi bem puxado mas me senti forte", "expect": [{"type": "exercise", "minutes": 60, "category": "academia"}], "allow_extra": ["affect"]}
 {"text": "oi", "expect": []}
+{"text": "dormi perto da meia-noite e acordei às 7 com o despertador", "expect": [{"type": "sleep", "bedtime": "00:00", "wake_time": "07:00"}]}
+{"text": "no trabalho me senti reconhecido pelo que entreguei", "expect": [{"type": "affect", "valence_sign": 1, "emotions_any": ["orgulhoso", "confiante", "satisfeito"]}]}
+{"text": "almocei uma marmita que levei de casa", "expect": [{"type": "meal", "label": "marmita"}]}
+{"text": "trabalhei das 9 às 18 hoje", "expect": [{"type": "work", "minutes": 540}]}
+{"text": "saí pro trabalho às 8 e cheguei em casa às 18h exausto", "expect": [{"type": "affect", "valence_sign": -1, "arousal_sign": -1}], "allow_extra": []}
+{"text": "hoje tô estressadíssimo com tudo", "expect": [{"type": "stress", "score": 5}], "allow_extra": ["affect"]}

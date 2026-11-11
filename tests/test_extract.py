@@ -113,3 +113,9 @@ def test_events_without_their_main_value_are_skipped_silently() -> None:
     events, problems = to_events(ex, NOW, "dormi 7h e fui pro trabalho")
     assert [e.type.value for e in events] == ["sleep"]
     assert problems == []
+
+
+def test_habits_are_passed_to_the_model() -> None:
+    req = build_request("fui na academia", NOW, habits=["academia", "meditar 10 min"])
+    assert "Hábitos da pessoa: academia, meditar 10 min." in req["messages"][0]["content"]
+    assert "Hábitos da pessoa: nenhum." in build_request("oi", NOW)["messages"][0]["content"]

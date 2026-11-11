@@ -66,3 +66,14 @@ def test_store_events_on_ignores_retracted(tmp_path) -> None:
     assert [e["type"] for e in store.events_on("2026-11-10")] == ["sleep"]
     store.retract(["n-sleep"], NOW)
     assert store.events_on("2026-11-10") == []
+
+
+def test_voice_detail_enriches_instead_of_repeating() -> None:
+    from lifelog.dedupe import classify
+
+    stored_sleep = [stored("sleep", hours=7.0)]
+    richer = ev(EventType.SLEEP, hours=8, bedtime="23:00", wake_time="07:00")
+    kind, old = classify(richer, stored_sleep)
+    assert kind == "enrich" and old["event_id"] == "old"
+    assert classify(ev(EventType.SLEEP, hours=7), stored_sleep)[0] == "repeat"
+    assert classify(ev(EventType.EXPENSE, amount=10), [])[0] == "new"

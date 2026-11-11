@@ -88,3 +88,13 @@ def test_explain_api_error_messages() -> None:
     )
     assert "sem créditos" in explain_api_error(no_credit)
     assert "erro na API" in explain_api_error(RuntimeError("boom"))
+
+
+def test_eval_allows_welcome_extra_events() -> None:
+    case = {"expect": [{"type": "sleep"}], "allow_extra": ["affect"]}
+    items = [
+        ExtractedEvent(type="sleep", hours=7),
+        ExtractedEvent(type="affect", valence=-1, arousal=-1),
+    ]
+    assert score_case(case, items)["types_ok"] is True
+    assert score_case({"expect": [{"type": "sleep"}]}, items)["types_ok"] is False

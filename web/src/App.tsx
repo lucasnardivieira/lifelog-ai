@@ -50,6 +50,21 @@ export default function App() {
   const [supportOpen, setSupportOpen] = useState(false)
   const t = useTokens()
 
+  // live refresh: the bot rebuilds the private JSON after each save; pick it up without a reload
+  useEffect(() => {
+    if (!payload || payload.sample) return
+    const id = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return
+      loadPayload().then(
+        (next) => {
+          if (next.generated_at !== payload.generated_at) setPayload(next)
+        },
+        () => undefined,
+      )
+    }, 15_000)
+    return () => window.clearInterval(id)
+  }, [payload])
+
   useEffect(() => {
     loadPayload().then(setPayload, (e: Error) => setError(e.message))
     const onHash = () => setPage(readHash())
@@ -90,7 +105,14 @@ export default function App() {
         >
           <div className="mb-4 px-3">
             <div className="text-lg font-bold tracking-tight">Trilhos</div>
-            <div className="text-xs text-muted">lifelog · {life.payload.sample ? 'demo' : 'privado'}</div>
+            <div className="flex items-center gap-1.5 text-xs text-muted">
+              lifelog · {life.payload.sample ? 'demo' : 'privado'}
+              {!life.payload.sample && (
+                <span className="inline-flex items-center gap-1 text-good-text" title="Atualiza sozinho a cada registro no bot">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-good" /> ao vivo
+                </span>
+              )}
+            </div>
           </div>
           {PAGES.map((p) => (
             <a

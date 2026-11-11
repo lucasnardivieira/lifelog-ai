@@ -85,11 +85,11 @@ make dev         # http://localhost:5173
    `TELEGRAM_ALLOWED_CHAT_ID`, restart with `make bot` (or `make bot-voice` for audio messages).
 4. Write freely ("dormi 6h30, acordei cansado", "gastei 42 no almoço"), send 🎤 audio, or use the
    button check-ins: `/sono`, `/checkin`, `/fechar`, `/who5`, `/pss10`. Every free-text extraction is shown
-   as a preview that you confirm before it's saved. `/desfazer` undoes the last save, and `/painel` rebuilds the dashboard.
+   as a preview that you confirm before it's saved. `/desfazer` undoes the last save. The private dashboard rebuilds itself after every save and the open page refreshes live (no `/painel` needed).
 
 Reminders: sleep diary at 08:00, affect check-in at 15:00, WHO-5 on Sundays at 20:00, PSS-10 + life
 satisfaction on the last day of the month. Messages sent while the PC is off are processed when the bot
-starts again. `make eval` scores the Claude extraction on a golden set of 24 PT-BR messages: **96% exact event types, 100% field accuracy** with Claude Haiku 5.5 at ~US$0.0003 per message (2026-11-10).
+starts again. `make eval` scores the Claude extraction on a golden set of 30 PT-BR messages: **100% event types, 100% field accuracy** with Claude Haiku 5.5 at ~US$0.0003 per message (2026-11-10).
 
 ### With your own data (stays on your machine)
 Put events in `data/private/events.jsonl` (same contract), then:

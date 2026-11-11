@@ -39,7 +39,7 @@ from lifelog.bot.flows import (
     is_last_day_of_month,
 )
 from lifelog.bot.habits import HabitStore, parse_new_habit
-from lifelog.dedupe import is_duplicate
+from lifelog.dedupe import adds_detail, classify
 from lifelog.events import Event, EventType
 from lifelog.extract.claude import extract
 from lifelog.extract.schema import TZ, to_events
@@ -75,7 +75,7 @@ Eu mostro o que entendi e você confirma.
 /habitos — lista · /parar_habito nome
 
 <b>Outros</b>
-/desfazer — desfaz o último registro · /painel — atualiza o dashboard · /cancelar
+/desfazer — desfaz o último registro · /cancelar\n(o painel se atualiza sozinho a cada registro)
 
 💬 Precisa conversar? CVV 188 (grátis, 24h) · SAMU 192"""
 
@@ -147,6 +147,37 @@ class LifelogBot:
         self.store = EventStore(EVENTS)
         self.habits = HabitStore(HABITS)
         self.allowed = _allowed_chat()
+        self._building = False
+        self._build_again = False
+
+    # ------------------------------------------------------------------ dashboard auto-refresh
+
+    async def _rebuild(self) -> bool:
+        cmd = [sys.executable, "-m", "lifelog.cli", "build", "--events", str(EVENTS.resolve())]
+        result = await asyncio.to_thread(subprocess.run, cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            log.error("dashboard build failed: %s", result.stderr[-2000:])
+        return result.returncode == 0
+
+    def schedule_refresh(self) -> None:
+        """Rebuild the private dashboard in the background after each save (coalesces bursts)."""
+        if self._building:
+            self._build_again = True
+            return
+
+        async def run() -> None:
+            self._building = True
+            try:
+                while True:
+                    self._build_again = False
+                    ok = await self._rebuild()
+                    if not self._build_again:
+                        break
+                log.info("dashboard refreshed (%s)", "ok" if ok else "failed")
+            finally:
+                self._building = False
+
+        asyncio.get_running_loop().create_task(run())
 
     # ------------------------------------------------------------------ guard
 
@@ -255,6 +286,7 @@ class LifelogBot:
         chat_data.pop("flow", None)
         events = flow.finalize(state["values"], _now())
         chat_data["last_batch"] = self.store.append(events)
+        self.schedule_refresh()
         summary = "\n".join(html.escape(describe(e)) for e in events)
         await query.edit_message_text(
             f"{flow.done_message}\n\n{summary}", parse_mode=ParseMode.HTML
@@ -294,7 +326,8 @@ class LifelogBot:
         await context.bot.send_chat_action(update.effective_chat.id, ChatAction.TYPING)
         now = _now()
         try:
-            extraction = await asyncio.to_thread(extract, text, now)
+            habit_names = [h["name"] for h in self.habits.load() if h.get("active", True)]
+            extraction = await asyncio.to_thread(extract, text, now, None, habit_names)
         except Exception:  # API down, no credits, invalid key…
             log.exception("extraction failed")
             await msg.reply_text(
@@ -317,26 +350,33 @@ class LifelogBot:
             return
 
         pid = uuid.uuid4().hex[:8]
-        repeated = [
-            is_duplicate(e, self.store.events_on(e.occurred_at.date().isoformat())) is not None
-            for e in events
+        status = [
+            classify(e, self.store.events_on(e.occurred_at.date().isoformat())) for e in events
         ]
-        context.chat_data.setdefault("pending", {})[pid] = (events, repeated)
-        lines = "\n".join(
-            f"↺ <s>{html.escape(describe(e))}</s> <i>já registrado</i>"
-            if dup
-            else html.escape(describe(e))
-            for e, dup in zip(events, repeated, strict=True)
-        )
+        context.chat_data.setdefault("pending", {})[pid] = (events, status)
+        labels = {"bedtime": "hora de deitar", "wake_time": "hora de acordar", "sol_minutes": "tempo para dormir",
+                  "awakenings": "despertares", "waso_minutes": "tempo acordado", "score": "qualidade", "rested": "descanso",
+                  "category": "categoria", "label": "detalhe", "pleasure": "prazer", "mastery": "domínio"}  # fmt: skip
+        lines = []
+        for e, (kind, old) in zip(events, status, strict=True):
+            text_e = html.escape(describe(e))
+            if kind == "repeat":
+                lines.append(f"↺ <s>{text_e}</s> <i>já registrado</i>")
+            elif kind == "enrich":
+                added = ", ".join(labels.get(f, f) for f in adds_detail(e, old or {}))
+                lines.append(f"↻ {text_e} <i>completa o registro ({html.escape(added)})</i>")
+            else:
+                lines.append(text_e)
         heard = f"🎤 <i>{html.escape(text)}</i>\n\n" if via_voice else ""
         warn = f"\n\n⚠️ Não entendi: {html.escape('; '.join(problems))}" if problems else ""
-        n_new = repeated.count(False)
-        if not any(repeated):
-            buttons = [("✅ salvar", "save"), ("✖ descartar", "drop")]
+        kinds = [k for k, _ in status]
+        n_useful = sum(k != "repeat" for k in kinds)
+        if "repeat" not in kinds:
+            buttons = [("✅ salvar", "new"), ("✖ descartar", "drop")]
             note = ""
-        elif n_new:
+        elif n_useful:
             buttons = [
-                (f"✅ salvar só os novos ({n_new})", "new"),
+                (f"✅ salvar só os novos ({n_useful})", "new"),
                 ("salvar tudo", "save"),
                 ("✖", "drop"),
             ]
@@ -353,7 +393,7 @@ class LifelogBot:
             ]
         )
         await msg.reply_text(
-            f"{heard}{html.escape(extraction.reply)}\n\n{lines}{warn}{note}",
+            f"{heard}{html.escape(extraction.reply)}\n\n{chr(10).join(lines)}{warn}{note}",
             parse_mode=ParseMode.HTML,
             reply_markup=keyboard,
         )
@@ -363,15 +403,23 @@ class LifelogBot:
         if pending is None:
             await query.edit_message_reply_markup(None)
             return
-        events, repeated = pending
+        events, status = pending
         if mode in ("save", "new"):
-            chosen = [
-                e for e, dup in zip(events, repeated, strict=True) if mode == "save" or not dup
+            pairs = list(zip(events, status, strict=True))
+            chosen = [e for e, (kind, _) in pairs if mode == "save" or kind != "repeat"]
+            # an enriched event replaces the stored one (append-only: retract old, append new)
+            replaced = [
+                old["event_id"]
+                for e, (kind, old) in pairs
+                if kind == "enrich" and old and e in chosen
             ]
+            if replaced:
+                self.store.retract(replaced, _now())
             chat_data["last_batch"] = self.store.append(chosen)
             await query.edit_message_text(
                 query.message.text_html + f"\n\n✅ salvo ({len(chosen)})", parse_mode=ParseMode.HTML
             )
+            self.schedule_refresh()
         else:
             await query.edit_message_text(
                 query.message.text_html + "\n\n✖ descartado", parse_mode=ParseMode.HTML
@@ -434,6 +482,7 @@ class LifelogBot:
             await update.message.reply_text("Não há registro recente para desfazer.")
             return
         self.store.retract(batch, _now())
+        self.schedule_refresh()
         await update.message.reply_text(
             f"↩️ Desfeito ({len(batch)} registro(s)). Nada é apagado: fica anotado como correção."
         )
@@ -472,15 +521,12 @@ class LifelogBot:
         if not await self._authorized(update):
             return
         await update.message.reply_text("Atualizando o painel…")
-        cmd = [sys.executable, "-m", "lifelog.cli", "build", "--events", str(EVENTS.resolve())]
-        result = await asyncio.to_thread(subprocess.run, cmd, capture_output=True, text=True)
-        if result.returncode == 0:
+        if await self._rebuild():
             await update.message.reply_text(
-                "📊 Painel atualizado. No PC: <code>make dev</code> → http://localhost:5173",
+                "📊 Painel atualizado. (Ele já se atualiza sozinho a cada registro.) No PC: <code>make dev</code> → http://localhost:5173",
                 parse_mode=ParseMode.HTML,
             )
         else:
-            log.error("build failed: %s", result.stderr[-2000:])
             await update.message.reply_text("Não consegui atualizar o painel (veja o log do bot).")
 
     # ------------------------------------------------------------------ reminders

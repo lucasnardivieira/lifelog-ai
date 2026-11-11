@@ -39,6 +39,15 @@ def score_case(case: dict[str, Any], items: list[ExtractedEvent]) -> dict[str, A
     expected = case["expect"]
     got_types = sorted(i.type for i in items)
     want_types = sorted(e["type"] for e in expected)
+    # extra events that are welcome (e.g. "acordei cansado" also yields an affect check-in)
+    extras = list(got_types)
+    for t in want_types:
+        if t in extras:
+            extras.remove(t)
+    if all(t in case.get("allow_extra", []) for t in extras) and all(
+        t in got_types for t in want_types
+    ):
+        got_types = want_types
     fields_ok = fields_total = 0
     for exp in expected:
         cand = [i for i in items if i.type == exp["type"]]

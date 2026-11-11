@@ -6,7 +6,7 @@ const base = import.meta.env.BASE_URL
 export async function loadPayload(): Promise<Payload> {
   for (const file of ['data/lifelog.local.json', 'data/lifelog.json']) {
     try {
-      const res = await fetch(`${base}${file}`)
+      const res = await fetch(`${base}${file}`, { cache: 'no-store' })
       if (res.ok && res.headers.get('content-type')?.includes('json')) return await res.json()
     } catch {
       /* try next */
